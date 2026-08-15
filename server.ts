@@ -244,17 +244,26 @@ app.post('/api/admin/add_course', (req, res) => {
 // 4. Vite Integration for Development/Production
 // ==========================================
 const startServer = async () => {
-    // We conditionally load vite so it doesn't break in production if not installed
-    try {
-        const { createServer: createViteServer } = await import('vite');
-        const vite = await createViteServer({
-            server: { middlewareMode: true },
-            appType: 'spa'
-        });
-        app.use(vite.middlewares);
-    } catch (e) {
-        console.warn("Vite middleware not loaded, assuming production environment or static build.");
+    if (process.env.NODE_ENV !== 'production') {
+        try {
+            const { createServer: createViteServer } = await import('vite');
+            const vite = await createViteServer({
+                server: { middlewareMode: true, allowedHosts: true },
+                appType: 'spa'
+            });
+            app.use(vite.middlewares);
+        } catch (e) {
+            console.warn("Vite middleware error.");
+            app.use(express.static(path.join(process.cwd(), 'dist')));
+        }
+    } else {
+        // Production mode
         app.use(express.static(path.join(process.cwd(), 'dist')));
+        
+        // Frontend React Router support for Production
+        app.get('*', (req, res) => {
+            res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
+        });
     }
 
     const PORT = process.env.PORT || 3001;
