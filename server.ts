@@ -240,6 +240,54 @@ app.post('/api/admin/add_course', (req, res) => {
   res.json({ status: 'success' });
 });
 
+app.post('/api/tts', async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ error: 'Matn kiritilmadi' });
+    }
+
+    const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY;
+    if (!elevenLabsApiKey) {
+      return res.status(500).json({ error: 'ElevenLabs API kaliti topilmadi' });
+    }
+
+    // ElevenLabs Default Voice ID (e.g. Rachel or custom voice)
+    const voiceId = "EXAVITQu4vr4xnSDxMaL"; 
+    
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'audio/mpeg',
+        'xi-api-key': elevenLabsApiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text,
+        model_id: "eleven_multilingual_v2",
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("ElevenLabs API error:", errorText);
+      return res.status(500).json({ error: 'Ovoz yaratishda xatolik yuz berdi' });
+    }
+
+    const audioBuffer = await response.arrayBuffer();
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.send(Buffer.from(audioBuffer));
+
+  } catch (error) {
+    console.error("TTS Xatolik:", error);
+    res.status(500).json({ error: 'Ichki server xatosi' });
+  }
+});
+
 // ==========================================
 // 4. Vite Integration for Development/Production
 // ==========================================

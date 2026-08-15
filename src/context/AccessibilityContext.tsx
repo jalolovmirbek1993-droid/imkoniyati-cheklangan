@@ -80,37 +80,70 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     setSettings((prev) => ({ ...prev, speakSpeed }));
   };
 
+  // Keep track of the current audio instance so we can stop it
+  const currentAudioRef = React.useRef<HTMLAudioElement | null>(null);
+
   const stopSpeaking = useCallback(() => {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
     }
+    setIsSpeaking(false);
   }, []);
 
   const speakText = useCallback(
-    (text: string, force = false) => {
-      if (!("speechSynthesis" in window)) return;
+    async (text: string, force = false) => {
       if (!force && !settings.screenReaderEnabled) return;
       stopSpeaking();
 
       const cleanText = text.replace(/\[|\]/g, " ");
       setActiveAnnouncement(cleanText);
+      setIsSpeaking(true);
 
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      utterance.lang = "uz-UZ";
-      utterance.rate = settings.speakSpeed;
+      try {
+        const response = await fetch('/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: cleanText })
+        });
 
-      const voices = window.speechSynthesis.getVoices();
-      const uzVoice = voices.find((v) => v.lang.includes("uz") || v.lang.includes("tr") || v.lang.includes("ru"));
-      if (uzVoice) {
-        utterance.voice = uzVoice;
+        if (!response.ok) {
+          throw new Error('TTS Failed');
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        
+        const audio = new Audio(url);
+        currentAudioRef.current = audio;
+        
+        // Use playback rate from settings if needed
+        audio.playbackRate = settings.speakSpeed;
+
+        audio.onended = () => {
+          setIsSpeaking(false);
+          currentAudioRef.current = null;
+          URL.revokeObjectURL(url);
+        };
+        
+        audio.onerror = () => {
+          setIsSpeaking(false);
+          currentAudioRef.current = null;
+          URL.revokeObjectURL(url);
+        };
+
+        await audio.play();
+      } catch (error) {
+        console.error("TTS o'ynashda xatolik:", error);
+        setIsSpeaking(false);
+        // Fallback to old TTS if API fails
+        if ("speechSynthesis" in window) {
+           const utterance = new SpeechSynthesisUtterance(cleanText);
+           utterance.lang = "uz-UZ";
+           utterance.rate = settings.speakSpeed;
+           window.speechSynthesis.speak(utterance);
+        }
       }
-
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
-
-      window.speechSynthesis.speak(utterance);
     },
     [settings.screenReaderEnabled, settings.speakSpeed, stopSpeaking]
   );
