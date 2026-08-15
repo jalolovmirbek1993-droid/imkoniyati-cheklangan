@@ -1,0 +1,50 @@
+/* src/index.css */
+@import "tailwindcss";
+
+:root {
+  --focus-ring: #38bdf8;
+}
+
+body.high-contrast, .theme-yellow-black {
+  background-color: #000000 !important;
+  color: #ffff00 !important;
+}
+
+.theme-yellow-black div,
+.theme-yellow-black header,
+.theme-yellow-black aside,
+.theme-yellow-black main,
+.theme-yellow-black button,
+.theme-yellow-black input,
+.theme-yellow-black textarea {
+  border-color: #ffff00 !important;
+  color: #ffff00 !important;
+  background-color: #111111 !important;
+}
+
+.theme-high-light {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+.theme-high-light div,
+.theme-high-light header,
+.theme-high-light aside,
+.theme-high-light main,
+.theme-high-light button,
+.theme-high-light input,
+.theme-high-light textarea {
+  border-color: #000000 !important;
+  color: #000000 !important;
+  background-color: #f8f9fa !important;
+}
+
+.font-size-small { font-size: 0.875rem; }
+.font-size-normal { font-size: 1rem; }
+.font-size-large { font-size: 1.25rem; }
+.font-size-extra-large { font-size: 1.5rem; }
+
+:focus-visible {
+  outline: 3px solid var(--focus-ring) !important;
+  outline-offset: 2px !important;
+}
