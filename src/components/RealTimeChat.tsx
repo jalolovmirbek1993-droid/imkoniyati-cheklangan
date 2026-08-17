@@ -13,6 +13,9 @@ import {
   MessageSquare,
   Wand2,
   VolumeX,
+  Camera,
+  X,
+  Video
 } from "lucide-react";
 
 interface RealTimeChatProps {
@@ -40,8 +43,20 @@ export const RealTimeChat: React.FC<RealTimeChatProps> = ({
   const [generateSignGestures, setGenerateSignGestures] = useState(true);
   const [isListening, setIsListening] = useState(false);
   const [isAiCorrecting, setIsAiCorrecting] = useState(false);
+  const [showSignCamera, setShowSignCamera] = useState(false);
+  const [isSignAnalyzing, setIsSignAnalyzing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -112,6 +127,68 @@ export const RealTimeChat: React.FC<RealTimeChatProps> = ({
       console.error(err);
     } finally {
       setIsAiCorrecting(false);
+    }
+  };
+
+  const toggleSignCamera = async () => {
+    if (showSignCamera) {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      }
+      setShowSignCamera(false);
+      speakText("Ishora kamerasi o'chirildi");
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        streamRef.current = stream;
+        setShowSignCamera(true);
+        speakText("Ishora kamerasi yoqildi. Harakatingizni ko'rsatib, tarjima tugmasini bosing.");
+        setTimeout(() => {
+          if (videoRef.current) videoRef.current.srcObject = stream;
+        }, 100);
+      } catch (err) {
+        console.warn(err);
+        setShowSignCamera(true);
+        speakText("Kameraga ulanishda muammo. Simulyatsiya rejimi yondi.");
+      }
+    }
+  };
+
+  const handleSignTranslate = async () => {
+    setIsSignAnalyzing(true);
+    speakText("Kadr tahlil qilinmoqda...");
+    try {
+      let imageFrameData = "";
+      if (videoRef.current && streamRef.current) {
+        const canvas = document.createElement("canvas");
+        canvas.width = 320;
+        canvas.height = 240;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(videoRef.current, 0, 0, 320, 240);
+          imageFrameData = canvas.toDataURL("image/jpeg");
+        }
+      }
+
+      const res = await fetch("/api/ai/sign-translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageFrame: imageFrameData }),
+      });
+      const data = await res.json();
+      if (data.status === "success" && data.gesture) {
+        setInputText((prev) => prev ? prev + " " + data.gesture : data.gesture);
+        speakText(`Tarjima natijasi: ${data.gesture}`);
+        toggleSignCamera(); // Tarjimadan so'ng kamerani yopamiz
+      }
+    } catch (err) {
+      console.error(err);
+      const fallback = "Salom";
+      setInputText((prev) => prev ? prev + " " + fallback : fallback);
+      speakText(`Tarjima: ${fallback}`);
+      toggleSignCamera();
+    } finally {
+      setIsSignAnalyzing(false);
     }
   };
 
@@ -257,6 +334,49 @@ export const RealTimeChat: React.FC<RealTimeChatProps> = ({
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Ishora tili Kamera Modali (Inline) */}
+        {showSignCamera && (
+          <div className="mx-4 mb-4 p-4 bg-slate-900 border border-[#38BDF8] rounded-xl shadow-2xl relative animate-fade-in">
+            <button 
+              onClick={toggleSignCamera}
+              className="absolute top-3 right-3 text-slate-400 hover:text-white bg-slate-800 p-1 rounded-full"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <h3 className="text-sm font-bold text-[#38BDF8] flex items-center gap-2 mb-3">
+              <Camera className="w-4 h-4" /> AI Ishora Tarjimoni
+            </h3>
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+              <div className="w-full sm:w-1/2 bg-black rounded-lg overflow-hidden border border-slate-700 flex justify-center items-center min-h-[160px]">
+                <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover max-h-[180px]" />
+                {!streamRef.current && (
+                  <div className="absolute flex flex-col items-center text-slate-500">
+                    <Video className="w-8 h-8 mb-2" />
+                    <span className="text-xs">Simulyatsiya (Kamera yo'q)</span>
+                  </div>
+                )}
+              </div>
+              <div className="w-full sm:w-1/2 space-y-3">
+                <p className="text-xs text-slate-300">
+                  Kameraga qarab ishora harakatingizni ko'rsating, so'ngra tahlil tugmasini bosing. AI sizning harakatingizni o'qib, matnga aylantiradi.
+                </p>
+                <button
+                  onClick={handleSignTranslate}
+                  disabled={isSignAnalyzing}
+                  className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg text-xs flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isSignAnalyzing ? (
+                    <Sparkles className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Hand className="w-4 h-4" />
+                  )}
+                  <span>{isSignAnalyzing ? "Tahlil qilinmoqda..." : "Harakatni Matnga O'girish"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Input qismi */}
         <form onSubmit={handleSubmit} className="p-4 bg-[#1E293B] border-t border-slate-700 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs bg-[#0F172A] p-2.5 rounded-lg border border-slate-700">
@@ -298,11 +418,22 @@ export const RealTimeChat: React.FC<RealTimeChatProps> = ({
           <div className="flex items-center gap-2">
             <button
               type="button"
+              onClick={toggleSignCamera}
+              className={`w-12 h-12 rounded-full flex items-center justify-center text-white shrink-0 transition shadow-lg ${
+                showSignCamera ? "bg-amber-500 hover:bg-amber-400" : "bg-slate-700 hover:bg-slate-600"
+              }`}
+              title="Ishora tili kamerasi"
+            >
+              <Camera className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
               onClick={toggleSpeechRecognition}
               aria-pressed={isListening}
-              className={`w-12 h-12 rounded-full flex items-center justify-center text-white shrink-0 transition ${
+              className={`w-12 h-12 rounded-full flex items-center justify-center text-white shrink-0 transition shadow-lg ${
                 isListening ? "bg-rose-600 animate-pulse" : "bg-rose-500 hover:bg-rose-600"
               }`}
+              title="Ovozli yozish"
             >
               {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
             </button>
