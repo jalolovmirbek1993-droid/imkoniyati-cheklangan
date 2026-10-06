@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { NavTab } from "../components/Navbar";
+import { NavTab } from "../types";
 
 export function useGlobalHotkeys(
   setActiveTab: (tab: NavTab) => void,

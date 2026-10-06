@@ -1,5 +1,6 @@
 import React from "react";
 import { useAccessibility } from "../context/AccessibilityContext";
+import { NavTab } from "../types";
 import {
   MessageSquare,
   BookOpen,
@@ -15,18 +16,6 @@ import {
   Heart,
   Award,
 } from "lucide-react";
-
-export type NavTab =
-  | "chat"
-  | "lenta"
-  | "tayyorlov"
-  | "ishora"
-  | "ai-tutor"
-  | "cv-sign"
-  | "bandlik"
-  | "live-assist"
-  | "psixologiya"
-  | "imtihon";
 
 interface NavbarProps {
   activeTab: NavTab;
@@ -173,7 +162,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, userNam
             { id: "cv-sign", label: "CV Imo-ishora", icon: Camera },
             { id: "bandlik", label: "Ish Bor", icon: Briefcase },
             { id: "live-assist", label: "Mening Ko'zim", icon: Eye },
-            { id: "psixologiya", label: "Psixologiya", icon: Heart },
+            { id: "psychology", label: "Psixologiya", icon: Heart },
             { id: "imtihon", label: "Imtihon Markazi", icon: Award },
           ].map((tab) => {
             const Icon = tab.icon;

@@ -47,8 +47,8 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // --- Old State Compatibility ---
   const [isListening, setIsListening] = useState(false);
-  const [transcript, setTranscript] = useState('');
-  const [narratorText, setNarratorText] = useState('');
+  const [transcript, setTranscript] = useState("");
+  const [narratorText, setNarratorText] = useState("");
   const [isAssertive, setIsAssertive] = useState(false);
 
   // --- New Methods ---
@@ -101,22 +101,22 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       setIsSpeaking(true);
 
       try {
-        const response = await fetch('/api/tts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: cleanText })
+        const response = await fetch("/api/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: cleanText }),
         });
 
         if (!response.ok) {
-          throw new Error('TTS Failed');
+          throw new Error("TTS Failed");
         }
 
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
-        
+
         const audio = new Audio(url);
         currentAudioRef.current = audio;
-        
+
         // Use playback rate from settings if needed
         audio.playbackRate = settings.speakSpeed;
 
@@ -125,7 +125,7 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
           currentAudioRef.current = null;
           URL.revokeObjectURL(url);
         };
-        
+
         audio.onerror = () => {
           setIsSpeaking(false);
           currentAudioRef.current = null;
@@ -138,10 +138,10 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
         setIsSpeaking(false);
         // Fallback to old TTS if API fails
         if ("speechSynthesis" in window) {
-           const utterance = new SpeechSynthesisUtterance(cleanText);
-           utterance.lang = "uz-UZ";
-           utterance.rate = settings.speakSpeed;
-           window.speechSynthesis.speak(utterance);
+          const utterance = new SpeechSynthesisUtterance(cleanText);
+          utterance.lang = "uz-UZ";
+          utterance.rate = settings.speakSpeed;
+          window.speechSynthesis.speak(utterance);
         }
       }
     },
@@ -149,34 +149,37 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   // --- Old Methods Compatibility ---
-  const speak = useCallback((text: string, assertive: boolean = false) => {
-    speakText(text, assertive);
-    announce(text, assertive);
-  }, [speakText]);
+  const speak = useCallback(
+    (text: string, assertive: boolean = false) => {
+      speakText(text, assertive);
+      announce(text, assertive);
+    },
+    [speakText]
+  );
 
   const announce = useCallback((text: string, assertive: boolean = false) => {
     setNarratorText(text);
     setIsAssertive(assertive);
     setTimeout(() => {
-      setNarratorText('');
+      setNarratorText("");
     }, 5000);
   }, []);
 
   const listen = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      announce('Kechirasiz, brauzeringiz ovoz orqali yozishni qullab quvvatlamaydi.', true);
+      announce("Kechirasiz, brauzeringiz ovoz orqali yozishni qullab quvvatlamaydi.", true);
       return;
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = 'uz-UZ';
+    recognition.lang = "uz-UZ";
     recognition.continuous = false;
     recognition.interimResults = false;
 
     recognition.onstart = () => {
       setIsListening(true);
-      announce('Tinglayapman, gapiring.', true);
+      announce("Tinglayapman, gapiring.", true);
     };
 
     recognition.onresult = (event: any) => {
@@ -189,7 +192,7 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     recognition.onerror = (event: any) => {
       console.error(event.error);
       setIsListening(false);
-      announce('Xatolik yuz berdi. Qaytadan urinib koring.', true);
+      announce("Xatolik yuz berdi. Qaytadan urinib koring.", true);
     };
 
     recognition.onend = () => setIsListening(false);
@@ -200,25 +203,40 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
   // --- DOM Effects ---
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.remove('text-base', 'text-xl', 'text-2xl', 'theme-slate-dark', 'theme-yellow-black', 'theme-high-light');
-    
-    if (settings.fontSize === 'normal') root.classList.add('text-base');
-    if (settings.fontSize === 'large') root.classList.add('text-xl');
-    if (settings.fontSize === 'extra-large') root.classList.add('text-2xl');
+    const body = document.body;
 
+    // Remove all existing theme classes
+    root.classList.remove(
+      "text-base",
+      "text-xl",
+      "text-2xl",
+      "theme-slate-dark",
+      "theme-yellow-black",
+      "theme-high-light"
+    );
+    body.classList.remove("high-contrast", "theme-yellow-black");
+
+    // Add font size class
+    if (settings.fontSize === "normal") root.classList.add("text-base");
+    if (settings.fontSize === "large") root.classList.add("text-xl");
+    if (settings.fontSize === "extra-large") root.classList.add("text-2xl");
+
+    // Add theme class
     root.classList.add(`theme-${settings.contrastTheme}`);
-    
-    if (settings.contrastTheme === 'slate-dark') {
-      root.style.backgroundColor = '#0f172a';
-      root.style.color = '#f8fafc';
-    } else if (settings.contrastTheme === 'yellow-black') {
-      root.style.backgroundColor = '#000000';
-      root.style.color = '#fde047';
-      document.body.classList.add("high-contrast", "theme-yellow-black");
-    } else if (settings.contrastTheme === 'high-light') {
-      root.style.backgroundColor = '#ffffff';
-      root.style.color = '#000000';
-      document.body.classList.remove("high-contrast", "theme-yellow-black");
+
+    // Apply inline styles and body classes based on theme
+    if (settings.contrastTheme === "slate-dark") {
+      root.style.backgroundColor = "#0f172a";
+      root.style.color = "#f8fafc";
+      body.classList.remove("high-contrast", "theme-yellow-black");
+    } else if (settings.contrastTheme === "yellow-black") {
+      root.style.backgroundColor = "#000000";
+      root.style.color = "#fde047";
+      body.classList.add("high-contrast", "theme-yellow-black");
+    } else if (settings.contrastTheme === "high-light") {
+      root.style.backgroundColor = "#ffffff";
+      root.style.color = "#000000";
+      body.classList.remove("high-contrast", "theme-yellow-black");
     }
   }, [settings.fontSize, settings.contrastTheme]);
 
@@ -226,21 +244,21 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey) {
-        if (e.key.toLowerCase() === 'c') {
+        if (e.key.toLowerCase() === "c") {
           e.preventDefault();
-          announce('Chat sahifasiga otilmoqda');
-          window.location.hash = '#/chat';
+          announce("Chat sahifasiga otilmoqda");
+          window.location.hash = "#/chat";
         }
-        if (e.key.toLowerCase() === 't') {
+        if (e.key.toLowerCase() === "t") {
           e.preventDefault();
-          announce('Tayyorlov sahifasiga otilmoqda');
-          window.location.hash = '#/prepare';
+          announce("Tayyorlov sahifasiga otilmoqda");
+          window.location.hash = "#/prepare";
         }
       }
     };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [announce]);
 
   return (
@@ -259,7 +277,7 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
         stopSpeaking,
         isSpeaking,
         activeAnnouncement,
-        
+
         // Old Compatibility
         theme: settings.contrastTheme,
         setTheme: setContrastTheme,
@@ -269,12 +287,12 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
         isListening,
         transcript,
         narratorText,
-        announce
+        announce,
       }}
     >
-      <div 
-        aria-live={isAssertive ? 'assertive' : 'polite'} 
-        aria-atomic="true" 
+      <div
+        aria-live={isAssertive ? "assertive" : "polite"}
+        aria-atomic="true"
         className="sr-only"
       >
         {narratorText}

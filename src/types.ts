@@ -1,16 +1,16 @@
 export type ContrastTheme = "slate-dark" | "yellow-black" | "high-light";
-export type NavTab = 
-  | "chat" 
-  | "ishora" 
-  | "tayyorlov" 
-  | "cv-sign" 
-  | "live-assist" 
-  | "social-feed" 
-  | "bandlik" 
+export type NavTab =
+  | "chat"
+  | "lenta"
+  | "tayyorlov"
+  | "ishora"
+  | "ai-tutor"
+  | "cv-sign"
+  | "bandlik"
+  | "live-assist"
   | "psychology"
   | "imtihon"
-  | "admin"
-  | "general";
+  | "admin";
 
 export type FontSize = "small" | "normal" | "large" | "extra-large";
 export type AccessibilityMode = "visual" | "hearing" | "speech" | "general";
@@ -33,15 +33,15 @@ export interface ChatMessage {
   correctedText?: string;
   signLanguageGestures?: string[];
   timestamp: string;
-  room: string;
+  room?: string;
   isAi?: boolean;
 }
 
 export interface OnlineUser {
   id: string;
   name: string; // e.g., "[Foydalanuvchi_1]"
-  role: "o'quvchi" | "ustoz" | "mehmon";
-  accessibilityMode: AccessibilityMode;
+  role?: "o'quvchi" | "ustoz" | "mehmon";
+  accessibilityMode?: AccessibilityMode;
 }
 
 export interface SignGesture {
@@ -80,7 +80,7 @@ export interface TayyorlovCourse {
 
 export interface PostRecord {
   id: number;
-  author_id: number;
+  author_id?: number;
   author_name: string;
   media_url?: string;
   text_content: string;
@@ -93,19 +93,19 @@ export interface JobRecord {
   id: number;
   title: string;
   employer_name: string;
-  category: "IT" | "Copywriting" | "Design" | "Translation" | "Voiceover" | "Support";
-  required_ability: "blind" | "deaf" | "mute" | "none" | "any";
+  category?: "IT" | "Copywriting" | "Design" | "Translation" | "Voiceover" | "Support";
+  required_ability?: "blind" | "deaf" | "mute" | "none" | "any";
   salary_range: string;
   description: string;
-  contact_info: string;
+  contact_info?: string;
   posted_at: string;
-  applications_count: number;
+  applications_count?: number;
 }
 
 export interface StoryRecord {
   id: number;
   author_name: string;
-  author_status: "blind" | "deaf" | "mute" | "none";
+  author_status?: "blind" | "deaf" | "mute" | "none";
   title: string;
   content: string;
   likes: number;
@@ -117,18 +117,18 @@ export interface PsychConsultation {
   id: number;
   client_name: string;
   specialist_name: string;
-  status: "pending" | "approved" | "completed";
+  status?: "pending" | "approved" | "completed";
   topic: string;
   scheduled_time: string;
-  is_anonymous: boolean;
+  is_anonymous?: boolean;
 }
 
 export interface ExamQuestion {
   id: number;
-  course_id: number;
+  course_id?: number;
   course_title: string;
   question_text: string;
-  audio_prompt: string;
+  audio_prompt?: string;
   sign_gesture_prompt?: string;
   options: string[];
   correct_option: number;
@@ -142,7 +142,7 @@ export interface ExamResult {
   score: number;
   total_questions: number;
   passed: boolean;
-  mode: "voice_stt" | "visual_sign" | "standard";
+  mode?: "voice_stt" | "visual_sign" | "standard";
   certificate_id?: string;
   completed_at: string;
 }

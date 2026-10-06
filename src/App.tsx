@@ -1,7 +1,7 @@
 // src/App.tsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { AccessibilityProvider, useAccessibility } from "./context/AccessibilityContext";
-import { Navbar, NavTab } from "./components/Navbar";
+import { Navbar } from "./components/Navbar";
 import { RealTimeChat } from "./components/RealTimeChat";
 import { SocialFeed } from "./components/SocialFeed";
 import { TayyorlovKurslari } from "./components/TayyorlovKurslari";
@@ -13,7 +13,7 @@ import { LiveAssistVision } from "./components/LiveAssistVision";
 import { PsychologyCommunity } from "./components/PsychologyCommunity";
 import { TayyorlovExamCenter } from "./components/TayyorlovExamCenter";
 import { AdminPanel } from "./components/AdminPanel";
-import { ChatMessage, OnlineUser } from "./types";
+import { ChatMessage, OnlineUser, NavTab } from "./types";
 import { useGlobalHotkeys } from "./hooks/useGlobalHotkeys";
 
 const MainAppContent: React.FC = () => {
@@ -165,6 +165,7 @@ const MainAppContent: React.FC = () => {
           />
         )}
         {activeTab === "bandlik" && <InklyuzivBandlik />}
+        {activeTab === "live-assist" && <LiveAssistVision />}
         {activeTab === "psychology" && <PsychologyCommunity />}
         {activeTab === "imtihon" && <TayyorlovExamCenter />}
         {activeTab === "admin" && <AdminPanel />}
